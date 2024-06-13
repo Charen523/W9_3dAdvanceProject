@@ -28,6 +28,8 @@ public class PlayerBaseState : IState
         input.playerActions.Movement.canceled += OnMovementCanceled;
         input.playerActions.Run.started += OnRunStarted;
         input.playerActions.Jump.started += OnJumpStarted;
+        input.playerActions.Attack.performed += OnAttackPerformed;
+        input.playerActions.Attack.canceled += OnAttackCanceled;
     }
 
     protected virtual void RemoveInputActionsCallbacks()
@@ -36,6 +38,8 @@ public class PlayerBaseState : IState
         input.playerActions.Movement.canceled -= OnMovementCanceled;
         input.playerActions.Run.started -= OnRunStarted;
         input.playerActions.Jump.started -= OnJumpStarted;
+        input.playerActions.Attack.performed -= OnAttackPerformed;
+        input.playerActions.Attack.canceled -= OnAttackCanceled;
     }
 
     public virtual void HandleInput()
@@ -66,6 +70,16 @@ public class PlayerBaseState : IState
     protected virtual void OnJumpStarted(InputAction.CallbackContext context)
     {
 
+    }
+
+    protected virtual void OnAttackPerformed(InputAction.CallbackContext context)
+    {
+        stateMachine.IsAttacking = true;
+    }
+
+    protected virtual void OnAttackCanceled(InputAction.CallbackContext context)
+    {
+        stateMachine.IsAttacking = false ;
     }
 
     protected void StartAnimation(int animationHash)
@@ -125,4 +139,28 @@ public class PlayerBaseState : IState
             playerTransform.rotation = Quaternion.Slerp(playerTransform.rotation, targetRotation, stateMachine.RotationDamping * Time.deltaTime);
         }
     }  
+
+    protected void ForceMove()
+    {
+        stateMachine.Player.Controller.Move(stateMachine.Player.ForceReceiver.Movement * Time.deltaTime);
+    }
+
+    protected float GetNormalizedTime(Animator animator, string tag)
+    {
+        AnimatorStateInfo currentInfo = animator.GetCurrentAnimatorStateInfo(0); //base Layer.
+        AnimatorStateInfo nextInfo = animator.GetNextAnimatorStateInfo(0);
+
+        if (animator.IsInTransition(0) && nextInfo.IsTag(tag))
+        {//전환중 && 다음 애니가 tag.
+            return nextInfo.normalizedTime;
+        }
+        else if (!animator.IsInTransition(0) && currentInfo.IsTag(tag))
+        {//전환x && 현재 애니가 tag.
+            return currentInfo.normalizedTime;
+        }
+        else
+        {
+            return 0f;
+        }
+    }
 }
